@@ -1,0 +1,962 @@
+#include <vector>
+#include "pch.h" // precompiled header
+#include <iostream> // standard input/output stream objects
+//#include <stdlib.h> // C++ standard library
+#include <math.h> // common mathematical operations and transformations
+#include <regex> // regular expression library
+#include <fstream> // Stream class to both read and write from/to files.
+#include <windows.h>
+#include <stdio.h>
+
+//deklaracja wirualnych klawiszy do obsugi strzalek
+#define KEY_UP 0x26 
+#define KEY_DOWN 0x28
+#define KEY_X 0x58
+
+//deklaracja styli wyswietlania tekstu
+#define ERROR "\x1B[31m"
+#define SUCCESS "\x1B[32m"
+#define	WARNING "\x1B[33m"
+#define DARK_BLUE "\033[3;44;93m"
+#define	LIGHT_BLUE "\033[3;104;93m"
+#define DARK_GREY "\033[3;100;30m"
+#define	LIGHT_GREY "\033[3;100;93m"
+#define RESET "\033[0m"
+
+using namespace std; // deklaracja uøycia przestrzeni nazw std::
+
+string *filePath;
+
+struct textFileStats {
+	int lowerCount;       //Alpha characters in lowercase only: a-z.
+	int upperCount;       //Alpha characters in uppercase only: A-Z.
+	int spaceCount;       //Whitespace characters: ' `, \n, \t, \v, \r, \l.
+	int enterCount;		  //Enters
+	int digitCount;		  //Digits
+	int diactCount;		  //Diacritis characters
+	int punctCount;       //Other characters
+	int count;			  //All characters
+};
+
+// struktury wykorzystywane przez program jako pamiec podreczna 
+struct fileCharsCache {
+	int charNumber;
+	char character;
+};
+fileCharsCache* charsCache;
+
+struct fileLinesCache {
+	int lineNumber;
+	string line;
+};
+fileLinesCache* linesCache;
+
+//funkcja sprawdzajπca iloúÊ cyfr, zwracajπca okreslonπ ilosÊ spacji (potrzebne do wygenerowania ladnego menu
+string NumDigits(int x)
+{
+	x = abs(x);
+	return (x < 10 ? "     " :
+		(x < 100 ? "    " :
+		(x < 1000 ? "   " :
+			(x < 10000 ? "  " :
+				" "))));
+}
+
+//funkcja pobierajπca od uøytkownika úcieøkÍ do pliku tekstowego
+void getFilePath() {
+	system("CLS");
+	cout << DARK_BLUE
+		<< ".________________________________________________________________________." << endl
+		<< "|                                                                        |" << endl
+		<< "|                   PODAJ åCIEØK  DO PLIKU TEKSTOWEGO:                   |" << endl
+		<< "|                                                                        |" << endl
+		<< "|________________________________________________________________________|" << endl
+		<< RESET
+		<< WARNING
+		<< "\t\tNa przyklad: 'C:\\Dokumenty\\pliktekstowy.txt"
+		<< RESET << endl;
+	cin >> *filePath;
+	if (filePath == NULL) {
+		getFilePath();
+	}
+}
+
+//funkcja sprawdzajπca dugoúÊ pliku tekstowego (iloúÊ znakÛw)
+int getCharsCount() {
+	int charCount = 0;
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in);
+
+	if (!file)
+	{
+		char repeat;
+		cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+		for (char c = file.get(); c != EOF; c = file.get())
+		{
+			charCount++;
+		}
+	}
+	file.close();
+	return charCount;
+}
+
+//funkcja sprawdzajπca iloúÊ lini w pliku
+int getLinesCount() {
+	int lineCount = 0;
+	string tmp;
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in);
+	if (!file)
+	{
+		cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+		while (!file.eof()) {
+			getline(file, tmp);
+			lineCount++;
+		}
+	}
+	file.close();
+
+	return lineCount;
+}
+
+//funkcja wyúwietlajπca zapisane do pamiÍci linie teksu z pliku
+//funkcja obsuguje nawigacjÍ strzalkami
+void displayCachedLines() {
+	int linesCount = getLinesCount();
+	char userInput = 'i';
+	int line = 0;
+	while (userInput != 'x')
+	{
+		int lineLength = linesCache[line].line.length();
+		string tmp = "";
+		string tmp2 = "";
+		for (int i = 1; i < 64 - lineLength; i++)
+		{
+			tmp += " ";
+		}
+
+		(line + 1 < 10 ? tmp2 = "   " :
+			(line + 1 < 100 ? tmp2 = "  " : ""));
+
+		system("CLS");
+		cout << DARK_BLUE
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|                       WYåWIETLANIE LINI " << line + 1 << NumDigits(line) << tmp2 << "                       |" << endl
+			<< "|                                                                        |" << endl
+			<< "|    Strzalka w gÛrÍ poprzednia linia           (-)                      |" << endl
+			<< "|    Strzalka w dÛl nastÍpna linia              (+)                      |" << endl
+			<< "|    Wciúnij x aby powrÛciÊ do glÛwnego menu     x                       |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET << LIGHT_BLUE
+			<< "|                                                                        |" << endl
+			<< RESET << LIGHT_GREY
+			<< "|  " << line + 1 << ": " << linesCache[line].line << tmp << tmp2 << " |" << endl
+			<< RESET << LIGHT_BLUE
+			<< "|                                                                        |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+
+		//obsluga eventow windows - obsluga nawigacji poprzez uzywanie strzalek
+		//Retrieves the number of unread input records in the console's input buffer.
+		HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
+		DWORD NumInputs = 0;
+		DWORD InputsRead = 0;
+		bool running = true;
+		/*
+		hConsoleInput [in]
+		A handle to the console input buffer. The handle must have the GENERIC_READ access right. For more information, see Console Buffer Security and Access Rights.
+
+		lpcNumberOfEvents [out]
+		A pointer to a variable that receives the number of unread input records in the console's input buffer.
+		*/
+		INPUT_RECORD irInput;
+
+		GetNumberOfConsoleInputEvents(hInput, &NumInputs);
+
+		ReadConsoleInput(hInput, &irInput, 1, &InputsRead);
+
+		switch (irInput.Event.KeyEvent.wVirtualKeyCode) {
+		case KEY_UP:
+			if (line > 0) {
+				line--;
+			}
+			system("pause");
+			break;
+		case KEY_DOWN:
+			if (line < linesCount - 1)
+			{
+				line++;
+			}
+			system("pause");
+			break;
+		case KEY_X:
+			system("CLS");
+			userInput = 'x';
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+//funkcja zapisujπca plik tekstowy do pamieci podrecznej programu
+void getFileToCache() {
+	try
+	{
+		int charCount = getCharsCount();
+		int lineCount = getLinesCount();
+
+		charsCache = new fileCharsCache[charCount];
+		linesCache = new fileLinesCache[lineCount];
+
+		//zapis wszystkich znakÛw 
+
+		string path = *filePath;
+		fstream file;
+		file.open(path.c_str(), ios::in);
+
+		if (!file)
+		{
+			cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+				<< RESET << path << ERROR
+				<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+				<< RESET << endl
+				<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+
+			char repeat;
+			cin >> repeat;
+			if ((repeat == 'T') || (repeat == 't'))
+			{
+				getFilePath();
+				getFileToCache();
+			}
+			else
+			{
+				exit(0);
+			}
+		}
+		else
+		{
+			int i = 0;
+			for (char c = file.get(); c != EOF; c = file.get())
+			{
+				charsCache[i].character = c;
+				i++;
+				charsCache[i].charNumber = i;
+			}
+		}
+		file.close();
+
+		//zapis wszystkich lini
+
+		file.open(path.c_str(), ios::in);
+		if (!file)
+		{
+			cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+				<< RESET << path << ERROR
+				<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+				<< RESET << RESET << endl
+				<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+
+			char repeat;
+			cin >> repeat;
+			if ((repeat == 'T') || (repeat == 't'))
+			{
+				getFilePath();
+				getFileToCache();
+			}
+			else
+			{
+				exit(0);
+			}
+		}
+		else
+		{
+			int i = 0;
+			while (!file.eof()) {
+
+				getline(file, linesCache[i].line);
+				i++;
+				linesCache[i].lineNumber = i;
+			}
+		}
+		file.close();
+
+		system("pause");
+		system("CLS");
+	}
+	catch (...)
+	{
+		cout << "Niespodziewany blπd, program zostanie zamkniÍty" << endl;
+		exit(0);
+	}
+}
+
+//funkcja pobierajπca z pliku linie tekstu oraz zapisujπca je w odwrotnej kolejnoúci
+void reverseLinesOrder() {
+	int linesCount = getLinesCount();
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in);
+	vector <string> cache;
+	cache.reserve(linesCount);
+	if (!file)
+	{
+		cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+			getFileToCache();
+			reverseLinesOrder();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+		while (!file.eof()) {
+			string tmp;
+			getline(file, tmp);
+			cache.push_back(tmp);
+		}
+		file.close();
+
+		cout << DARK_BLUE
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|      LINIE ZOSTAN• ODWR”CONE ORAZ ZAPISANE W PLIKU TEKSTOWYM           |" << endl
+			<< "|      ORYGINALNY PLIK ZOSTANIE ZMODYFIKOWANY NA STAL ...                |" << endl
+			<< "|      CZY NA PEWNO CHCESZ ZAPISAC ZMIANY DO PLIKU? (T/n)                |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+		char choice;
+		cin >> choice;
+		//zapis do pliku w odwrotnej kolejnosci lini
+		if ((choice == 'T') || (choice == 't') || (choice == 'Y') || (choice == 'y'))
+		{
+			file.open(path.c_str(), ios::out);
+			for (int i = linesCount - 1; i >= 0; i--) {
+				file << cache.at(i) << "\n";
+			}
+			file.close();
+		}
+
+
+		system("pause");
+	}
+}
+
+// funkcja pobierajπca z pliku znaki oraz zapisujπca je w odwrotnej kolejnoúci
+void reverseCharsOrder() {
+	int charsCount = getCharsCount();
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in);
+	vector <char> cache;
+	cache.reserve(charsCount);
+	if (!file)
+	{
+		cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+			getFileToCache();
+			reverseCharsOrder();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+		for (char c = file.get(); c != EOF; c = file.get())
+		{
+			cache.push_back(c);
+		}
+		file.close();
+		cout << DARK_BLUE
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|      ZNAKI ZOSTAN• ODWR”CONE ORAZ ZAPISANE W PLIKU TEKSTOWYM           |" << endl
+			<< "|      ORYGINALNY PLIK ZOSTANIE ZMODYFIKOWANY NA STAL ...                |" << endl
+			<< "|      CZY NA PEWNO CHCESZ ZAPISAC ZMIANY DO PLIKU? (T/n)                |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+		char choice;
+		cin >> choice;
+		//zapis do pliku w odwrotnej kolejnosci znakow
+		if ((choice == 'T') || (choice == 't') || (choice == 'Y') || (choice == 'y'))
+		{
+			file.open(path.c_str(), ios::out);
+			for (int i = charsCount - 1; i >= 0; i--) {
+				file << cache.at(i);
+			}
+			file.close();
+		}
+
+
+		system("pause");
+	}
+}
+
+//funkcj ktÛra zastÍpuje polskie znaki laciÒskimi odpowiednikami 
+void deletePolishChars() {
+
+	int charsCount = getCharsCount();
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in | ios::out);
+	vector <char> cache;
+	cache.reserve(charsCount);
+	if (!file)
+	{
+		cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+			getFileToCache();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+		//podmiana polskich znakÛw na laciÒskie odpowiedniki
+		for (char c = file.get(); c != EOF; c = file.get())
+		{
+			switch (c) {
+			case 'π':
+				cache.push_back('a');
+				break;
+			case 'Ê':
+				cache.push_back('c');
+				break;
+			case 'Í':
+				cache.push_back('e');
+				break;
+			case '≥':
+				cache.push_back('l');
+				break;
+			case 'Ò':
+				cache.push_back('n');
+				break;
+			case 'Û':
+				cache.push_back('o');
+				break;
+			case 'ú':
+				cache.push_back('s');
+				break;
+			case 'ø':
+			case 'ü':
+				cache.push_back('z');
+				break;
+			case '•':
+				cache.push_back('A');
+				break;
+			case '∆':
+				cache.push_back('C');
+				break;
+			case ' ':
+				cache.push_back('E');
+				break;
+			case '£':
+				cache.push_back('L');
+				break;
+			case '—':
+				cache.push_back('N');
+				break;
+			case '”':
+				cache.push_back('O');
+				break;
+			case 'å':
+				cache.push_back('S');
+				break;
+			case 'Ø':
+			case 'è':
+				cache.push_back('Z');
+				break;
+			default:
+				cache.push_back(c);
+				break;
+			}
+		}
+		file.close();
+
+		cout << DARK_BLUE
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|      POLSKIE ZNAKI ZOSTALY USUNI TE Z KOPII W PAMI CI PODR CZNEJ       |" << endl
+			<< "|      ORYGINALNY PLIK ZOSTANIE ZMODYFIKOWAN NA STAL ...                 |" << endl
+			<< "|      CZY NA PEWNO CHCESZ ZAPISAC ZMIANY DO PLIKU? (T/n)                |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+		char choice;
+		cin >> choice;
+		// potwierdzenie przez uøytkownika oraz zapis do pliku
+		if ((choice == 'T') || (choice == 't') || (choice == 'Y') || (choice == 'y'))
+		{
+			file.open(path.c_str(), ios::out);
+			for (int i = 0; i < charsCount; i++) {
+				file << cache[i];
+			}
+			file.close();
+		}
+
+
+		system("pause");
+	}
+}
+
+//funkcja wyúwietlajπca statystyki pliku tekstowego
+void displayStatistics(textFileStats fileStats, int lineCount)
+{
+	string tmp;
+	(lineCount < 10 ? tmp = "                          " :
+		(lineCount < 100 ? tmp = "                        " :
+		(lineCount < 1000 ? tmp = "                       " :
+			(lineCount < 10000 ? tmp = "                      " :
+				tmp = "                     "))));
+
+	system("CLS");
+	cout << LIGHT_GREY
+		<< ".________________________________________________________________________." << endl
+		<< "|                                                                        |" << endl
+		<< "|              STATYSTYKA PLIKU PODANEGO PRZEZ UØYTKOWNIKA               |" << endl
+		<< "|                                                                        |" << endl
+		<< RESET
+		<< DARK_BLUE
+		<< ".________________________________________________________________________." << endl
+		<< "|                                                                        |" << endl
+		<< "|    +--------------------------------------------- Wszystkie znaki      |" << endl
+		<< "|    |     +--------------------------------------- Wielkie litery       |" << endl
+		<< "|    |     |     +--------------------------------- Male litery          |" << endl
+		<< "|    |     |     |     +--------------------------- Spacje               |" << endl
+		<< "|    |     |     |     |     +--------------------- Polskie znaki        |" << endl
+		<< "|    |     |     |     |     |     +--------------- Cyfry                |" << endl
+		<< "|    |     |     |     |     |     |     +--------- Inne znaki           |" << endl
+		<< "|    |     |     |     |     |     |     |     +--- IloúÊ linii/zdaÒ     |" << endl
+		<< "|____|_____|_____|_____|_____|_____|_____|_____|_________________________|" << endl
+		<< RESET
+		<< LIGHT_BLUE
+		<< "|"
+		<< NumDigits(fileStats.count)
+		<< fileStats.count
+		<< NumDigits(fileStats.upperCount)
+		<< fileStats.upperCount
+		<< NumDigits(fileStats.lowerCount)
+		<< fileStats.lowerCount
+		<< NumDigits(fileStats.spaceCount)
+		<< fileStats.spaceCount
+		<< NumDigits(fileStats.diactCount)
+		<< fileStats.diactCount
+		<< NumDigits(fileStats.digitCount)
+		<< fileStats.digitCount
+		<< NumDigits(fileStats.punctCount)
+		<< fileStats.punctCount
+		<< NumDigits(fileStats.punctCount)
+		<< lineCount
+		<< tmp << "|" << endl
+		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|________________________________________________________________________|" << endl
+		<< RESET;
+
+	system("pause");
+	system("CLS");
+}
+
+//funkcja generujπca statystyki pliku tekstowego
+void getStats()
+{
+	try
+	{
+		int linesCount = getLinesCount();
+		string path = *filePath;
+		fstream file;
+		file.open(path.c_str(), ios::in);
+
+		if (!file)
+		{
+			cout << ERROR << "WYST•PIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+				<< RESET << path << ERROR
+				<< " -NIE JEST POPRAWN• åCIEØK• DO PLIKU" << endl
+				<< RESET << endl
+				<< "Czy chces podaÊ úcieøkÍ pliku ponownie? (T/N)" << endl;
+
+			char repeat;
+			cin >> repeat;
+			if ((repeat == 'T') || (repeat == 't'))
+			{
+				getFilePath();
+				getStats();
+			}
+			else
+			{
+				exit(0);
+			}
+		}
+		else
+		{
+			textFileStats fileStats;
+			fileStats.lowerCount = 0;
+			fileStats.upperCount = 0;
+			fileStats.spaceCount = 0;
+			fileStats.enterCount = 0;
+			fileStats.punctCount = 0;
+			fileStats.digitCount = 0;
+			fileStats.diactCount = 0;
+			fileStats.count = 0;
+			//zliczanie ilosci wystπpieÒ danych znakÛw
+			for (char c = file.get(); c != EOF; c = file.get())
+			{
+				fileStats.count++;
+				if ((int(c) >= 97) && (int(c) <= 122)) {
+					fileStats.lowerCount++;
+				}
+				else if ((int(c) >= 65) && (int(c) <= 90)) {
+					fileStats.upperCount++;
+				}
+				else if (int(c) == 32) {
+					fileStats.spaceCount++;
+				}
+				else if (int(c) == 10)
+				{
+					fileStats.enterCount++;
+				}
+				else if ((int(c) >= 48) && (int(c) <= 57)) {
+					fileStats.digitCount++;
+				}
+				else if ((int(c) >= -116) && (int(c) <= -1)) {
+
+					fileStats.diactCount++;
+				}
+				else {
+					fileStats.punctCount++;
+				}
+			}
+			displayStatistics(fileStats, linesCount);
+		}
+		file.close();
+	}
+	catch (...)
+	{
+		cout << ERROR << "NIESPODZIEWANY BLAD PROGRAMU! PROGRAM ZOSTANIE ZAMKNI TY" << endl;
+		exit(0);
+	}
+}
+
+//funkcja opowiedzialna obslugÍ klawiatury w podmenu programu
+void subMenuSelector(char userSubChoice) {
+	switch (userSubChoice) {
+	case 'z':
+	case 'Z':
+		reverseCharsOrder();
+		break;
+	case'l':
+	case 'L':
+		reverseLinesOrder();
+		break;
+	case 'b':
+	case 'B':
+		cout << DARK_GREY
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|                       POWR”T DO GLOWNEGO MENU                          |" << endl
+			<< "|                                                                        |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+		system("pause");
+		break;
+	default:
+		cout << ERROR << endl << "NIEPOPRAWNY WYB”R" << endl;
+		system("pause");
+		break;
+	}
+}
+
+//funkcja generujπca widok podmenu
+void displaySubMenu() {
+	char userSubChoice;
+	system("CLS");
+	cout << DARK_BLUE
+		<< ".________________________________________________________________________." << endl
+		<< "|                                                                        |" << endl
+		<< "|                   ZAPIS PLIKU W ODWROTNEJ KOLEJNOåCI                   |" << endl
+		<< "|                                                                        |" << endl
+		<< "|________________________________________________________________________|" << endl
+		<< RESET
+		<< LIGHT_BLUE
+		<< "|                                                                        |" << endl
+		<< "|     Z - ZAPISZ W ODWROTNEJ KOLEJNOåCI ZNAKAMI                          |" << endl
+		<< "|                                                                        |" << endl
+		<< "|     L - ZAPISZ W ODWROTNEJ KOLEJNOåCI LINIAMI                          |" << endl
+		<< "|                                                                        |" << endl
+		<< "|     B - POWR”T DO GLOWNEGO MENU                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|________________________________________________________________________|" << endl
+		<< RESET;
+	cin >> userSubChoice;
+	system("CLS");
+	subMenuSelector(userSubChoice);
+}
+
+//funkcja odpowiedzialna za obslugÍ klawiatury w menu glÛwnym
+void menuSelector(char userChoice) {
+	switch (userChoice) {
+	case 'p':
+	case 'P':
+		getFilePath();
+		break;
+	case 's':
+	case 'S':
+		getStats();
+		break;
+	case 'l':
+	case 'L':
+		displayCachedLines();
+		break;
+	case 'o':
+	case 'O':
+		displaySubMenu();
+		break;
+	case 'u':
+	case 'U':
+		deletePolishChars();
+		break;
+	case 'q':
+	case 'Q':
+		cout << ERROR
+			<< "PROGRAM ZAKO—CZY SWOJE DZIALANIE!" << endl
+			<< RESET;
+		system("pause");
+		exit(0);
+		break;
+	default:
+		cout << ERROR << endl << "NIEPOPRAWNY WYB”R" << endl;
+		system("pause");
+		break;
+	}
+}
+
+//funkcja generujπca widok glownego menu programu
+void displayMenu() {
+	char userChoice;
+	system("CLS");
+	cout << DARK_BLUE
+		<< ".________________________________________________________________________." << endl
+		<< "|                                                                        |" << endl
+		<< "|             MENU PROGRAMU - STATYSTYKA PLIKU TEKSTOWEGO                |" << endl
+		<< "|                                                                        |" << endl
+		<< "|________________________________________________________________________|" << endl
+		<< RESET
+		<< LIGHT_BLUE
+		<< "|                                                                        |" << endl
+		<< "|     P - WYBIERZ åCIEØK  PLIKU                                          |" << endl
+		<< "|     S - WYåWIETL STATYSTYKI PLIKU                                      |" << endl
+		<< "|     L - WYåWIETL PLIK LINIA PO LINII                                   |" << endl
+		<< "|     O - ZAPIS PLIKU W ODWROTNEJ KOLEJNOåCI                             |" << endl
+		<< "|     U - USUNI CIE POLSKICH ZNAK”W                                      |" << endl
+		<< "|     Q - WYJåCIE Z PROGRAMU                                             |" << endl
+		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|________________________________________________________________________|" << endl
+		<< RESET;
+	cin >> userChoice;
+	system("CLS");
+	menuSelector(userChoice);
+}
+
+void simplyfiedMenu(string userChoice) {
+	cout << userChoice;
+	if ((userChoice == "STAT") || (userChoice == "stat"))
+	{
+		getStats();
+	}
+	else if ((userChoice == "LINE") || (userChoice == "line"))
+	{
+		getFileToCache();
+		displayCachedLines();
+	}
+	else if ((userChoice == "SRL") || (userChoice == "srl"))
+	{
+		reverseLinesOrder();
+		cout << SUCCESS << "Sprawdü podany plik tekstowy" << endl;
+	}
+	else if ((userChoice == "SRCH") || (userChoice == "srch"))
+	{
+		reverseCharsOrder();
+		cout << SUCCESS << "Sprawdü podany plik tekstowy" << endl;
+	}
+	else if ((userChoice == "DEL") || (userChoice == "del"))
+	{
+		deletePolishChars();
+		cout << SUCCESS << "Sprawdü podany plik tekstowy" << endl;
+	}
+	else {
+		cout << ERROR << endl << "NIEPOPRAWNY WYB”R" << RESET << endl;
+		system("pause");
+	}
+}
+
+//GLOWNA FUNKCJA PROGRAMU
+int main(int argc, char *argv[]) // main( iloúÊ argumentÛw, tablica pointerÛw argumentÛw)
+{
+	setlocale(LC_ALL, "Polish"); // umoøliwienia programowi wyúwietlania polskich znakÛw
+	filePath = new string;
+	system("CLS"); // wyczyúÊ konsole
+
+	switch (argc) { // sprawdz ilosc podanych przez uzytkownika argumentÛw
+	case 1:
+	{
+		getFilePath(); //pobiera scieøkÍ pliku od uøytkownika	
+		getFileToCache(); //tworzy kopiÍ pliku w pamiÍci podrÍcznej
+		while (true) {
+			displayMenu();//wyúwietlanie glownego menu programu
+		}
+	}
+	break;
+	case 2:
+	{
+		if ((*argv[1] == 'H') || (*argv[1] == 'h') || (*argv[1] == '?') || (*argv[1] == 'help') || (*argv[1] == 'm') || (*argv[1] == 'man') || (*argv[1] == 'i') || (*argv[1] == 'info')) //pomoc, informacja dla uzytkownika jak uzywac programu z wiersza polecen
+		{
+			cout << DARK_BLUE
+				<< ".________________________________________________________________________." << endl
+				<< "|                                                                        |" << endl
+				<< "|         INSTRUKCJA PROGRAMU \"STATYSTYKA PLIKU TEKSTOWEGO\"              |" << endl
+				<< "|                                                                        |" << endl
+				<< "|________________________________________________________________________|" << endl
+				<< RESET
+				<< LIGHT_BLUE
+				<< "|                                                                        |" << endl
+				<< "|   ABY WLACZY∆ PROGAM W TRYBIE AUTOMATYCZNYM LUB P”L AUTOMATYCZNYM      |" << endl
+				<< "|   UØYTKOWNIK MUSI PODAC DODATKOWE ARGUMENTY PRZY WL•CZANIU PROGRAMU    |" << endl
+				<< "|   OBSLUGIWANE POLECENIA(ARGUMENTY):                                    |" << endl
+				<< "|                                                                        |" << endl
+				<< "|     STAT   - WYåWIETL STATYSTYKI PLIKU                                 |" << endl
+				<< "|     LINE   - WYåWIETL PLIK LINIA PO LINII                              |" << endl
+				<< "|     SRL    - ZAPIS PLIKU W ODWROTNEJ KOLEJNOåCI LINII                  |" << endl
+				<< "|     SRCH   - ZAPIS PLIKU W ODWROTNEJ KOLEJNOåCI ZNAK”W                 |" << endl
+				<< "|     DEL    - USUNI CIE POLSKICH ZNAK”W                                 |" << endl
+				<< "|                                                                        |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   PROGRAM WYMAGA WPROWADZENIA PELNEJ SCIEØKI DO PLIKU.                 |" << endl
+				<< "|   PRZYKLADOWO:                                                         |" << endl
+				<< "|   C:\\MOJE DOKUMENTY\\PLIKI TEKSTOWE\\PLIK TEKSTOWY.TXT                   |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   SKLADNIA:                                                            |" << endl
+				<< "|   {NAZWA_EXE}* {åCIEØKA_PLIKU}* {ARGUMENT}                             |" << endl
+				<< "|   * - WYMAGANE                                                         |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   PRZYKLADOWO:                                                         |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   TEXT-STATS.EXE  C:\\PLIK.TXT  STAT                                    |" << endl
+				<< "|   PODANIE POWYØSZEJ KOMENDY W WIERSZU POLECE— WYåWIETLI STATYSTYKI     |" << endl
+				<< "|   DLA PLIKU \"PLIK.TXT\" ZNAJDUJ•CEGO SI  NA DYSKU C                     |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   TEXT-STATS.EXE C:\\PLIK.TXT                                           |" << endl
+				<< "|   PODANIE POWYØSZEJ KOMENDY W WIERSZU POLECE— WYåWIETLI PELEN MENU     |" << endl
+				<< "|   PROGRAMU Z ZALADOWANYM PLIKIEM TEKSOWYM \"PLIK.TXT\"                   |" << endl
+				<< "|   ZNAJDUJ•CYM SI  NA DYSKU C                                           |" << endl
+				<< "|                                                                        |" << endl
+				<< "|                                                                        |" << endl
+				<< "|________________________________________________________________________|" << endl
+				<< RESET;
+			exit(0);
+		}
+		else
+		{
+			*filePath = argv[1]; //przypisanie argumentu zawierajπcego sciÍøkÍ do pliku z wiersza polecen 
+		}
+
+		getFileToCache();
+		while (true) {
+			displayMenu();
+		}
+	}
+	break;
+	case 3:
+	{
+		*filePath = argv[1];
+		string choice = argv[2];
+		simplyfiedMenu(choice);
+	}
+	break;
+	default:
+	{
+		cout << "Nieprawidlowa iloúÊ argumentÛw!" << endl;
+		exit(0);
+	}
+	break;
+	}
+
+}
+
+
+
+
