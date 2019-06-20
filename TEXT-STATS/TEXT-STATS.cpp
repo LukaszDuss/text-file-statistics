@@ -1,7 +1,7 @@
-﻿
+﻿#include <vector>
 #include "pch.h" // precompiled header
 #include <iostream> // standard input/output stream objects
-#include <stdlib.h> // C++ standard library
+//#include <stdlib.h> // C++ standard library
 #include <math.h> // common mathematical operations and transformations
 #include <regex> // regular expression library
 #include <fstream> // Stream class to both read and write from/to files.
@@ -63,7 +63,7 @@ void getFilePath() {
 	cout << DARK_BLUE
 		<< ".________________________________________________________________________." << endl
 		<< "|                                                                        |" << endl
-		<< "|                   PODAJ ŚCIEŻKĘ DO PLIKU TESKTOWEGO:                   |" << endl
+		<< "|                   PODAJ ŚCIEŻKĘ DO PLIKU TEKSTOWEGO:                   |" << endl
 		<< "|                                                                        |" << endl
 		<< "|________________________________________________________________________|" << endl
 		<< RESET
@@ -71,38 +71,12 @@ void getFilePath() {
 		<< "\t\tNa przyklad: 'C:\\Dokumenty\\pliktekstowy.txt"
 		<< RESET << endl;
 	cin >> *filePath;
-	if (filePath != NULL) {
-		cout << endl << "Podano: " << endl << *filePath << endl << endl;
-	}
-	else
-	{
-		cout << ERROR << endl << "Nie podano ścieżki lub ścieżka jest niepoprawna" << endl << *filePath << endl;
+	if (filePath == NULL) {
 		getFilePath();
 	}
 }
 
-void getNewFilePath() {
-	system("CLS");
-	cout << DARK_BLUE
-		<< ".________________________________________________________________________." << endl
-		<< "|                                                                        |" << endl
-		<< "|             PODAJ ŚCIEŻKĘ DLA NOWEGO PLIKU TESKTOWEGO:                 |" << endl
-		<< "|                                                                        |" << endl
-		<< "|________________________________________________________________________|" << endl
-		<< RESET
-		<< WARNING
-		<< "\t\tNa przyklad: 'C:\\Dokumenty\\pliktekstowy.txt"
-		<< RESET << endl;
-	cin >> *newFilePath;
-	if (newFilePath != NULL) {
-		cout << endl << "Podano: " << endl << *newFilePath << endl << endl;
-	}
-	else
-	{
-		cout << ERROR << endl << "Nie podano ścieżki lub ścieżka jest niepoprawna" << endl << *newFilePath << endl;
-		getNewFilePath();
-	}
-}
+
 
 int getCharsCount() {
 	int charCount = 0;
@@ -112,7 +86,21 @@ int getCharsCount() {
 
 	if (!file)
 	{
-		cout << ERROR << endl << "Couldn't open " << path << endl;
+		char repeat;
+		cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+		}
+		else
+		{
+			exit(0);
+		}
 	}
 	else
 	{
@@ -133,7 +121,22 @@ int getLinesCount() {
 	file.open(path.c_str(), ios::in);
 	if (!file)
 	{
-		cout << ERROR << endl << "Couldn't open " << path << endl;
+		cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+		}
+		else
+		{
+			exit(0);
+		}
 	}
 	else
 	{
@@ -162,17 +165,17 @@ void displayCachedLines() {
 			tmp += " ";
 		}
 
-		(line+1 < 10 ? tmp2 = "   " :
-			(line+1 < 100 ? tmp2 = "  " : ""));
+		(line + 1 < 10 ? tmp2 = "   " :
+			(line + 1 < 100 ? tmp2 = "  " : ""));
 
 		system("CLS");
 		cout << DARK_BLUE
 			<< ".________________________________________________________________________." << endl
 			<< "|                                                                        |" << endl
-			<< "|                       WYŚWIETLANIE LINI " << line + 1 << NumDigits(line)<< tmp2 << "                       |" << endl
+			<< "|                       WYŚWIETLANIE LINI " << line + 1 << NumDigits(line) << tmp2 << "                       |" << endl
 			<< "|                                                                        |" << endl
-			<< "|    Strzalka do góry poprzednia linia          (-)                      |" << endl
-			<< "|    Strzalka na dól następna linia             (+)                      |" << endl
+			<< "|    Strzalka w górę poprzednia linia           (-)                      |" << endl
+			<< "|    Strzalka w dól następna linia              (+)                      |" << endl
 			<< "|    Wciśnij x aby powrócić do glównego menu     x                       |" << endl
 			<< "|________________________________________________________________________|" << endl
 			<< RESET << LIGHT_BLUE
@@ -183,7 +186,7 @@ void displayCachedLines() {
 			<< "|                                                                        |" << endl
 			<< "|________________________________________________________________________|" << endl
 			<< RESET;
-		cout << linesCache[line].line.length();
+		//cout << linesCache[line].line.length();
 		HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
 		DWORD NumInputs = 0;
 		DWORD InputsRead = 0;
@@ -219,29 +222,12 @@ void displayCachedLines() {
 				<< "|________________________________________________________________________|" << endl
 				<< RESET;
 			userInput = 'x';
-			system("pause");
 			break;
 		default:
 			break;
 		}
 	}
 }
-
-void reverseLinesOrder() {
-	getNewFilePath();
-
-}
-
-void reverseCharsOrder() {
-	getNewFilePath();
-
-}
-
-void deletePolishChars() {
-	getNewFilePath();
-
-}
-
 
 void getFileToCache() {
 	try
@@ -258,7 +244,23 @@ void getFileToCache() {
 
 		if (!file)
 		{
-			cout << ERROR << endl << "Couldn't open " << path << endl;
+			cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+				<< RESET << path << ERROR
+				<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+				<< RESET << endl
+				<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+
+			char repeat;
+			cin >> repeat;
+			if ((repeat == 'T') || (repeat == 't'))
+			{
+				getFilePath();
+				getFileToCache();
+			}
+			else
+			{
+				exit(0);
+			}
 		}
 		else
 		{
@@ -272,10 +274,28 @@ void getFileToCache() {
 		}
 		file.close();
 
+		//do rozdzielenia na osobne funkcje
+
 		file.open(path.c_str(), ios::in);
 		if (!file)
 		{
-			cout << ERROR << endl << "Couldn't open " << path << endl;
+			cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+				<< RESET << path << ERROR
+				<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+				<< RESET << RESET << endl
+				<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+
+			char repeat;
+			cin >> repeat;
+			if ((repeat == 'T') || (repeat == 't'))
+			{
+				getFilePath();
+				getFileToCache();
+			}
+			else
+			{
+				exit(0);
+			}
 		}
 		else
 		{
@@ -294,11 +314,256 @@ void getFileToCache() {
 	}
 	catch (...)
 	{
-		// this executes if f() throws  string or int or any other unrelated type
-		//all errors should be displayed BLOODY RED
+		cout << "Niespodziewany bląd, program zostanie zamknięty" << endl;
+		exit(0);
 	}
 }
 
+void reverseLinesOrder() {
+	int linesCount = getLinesCount();
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in);
+	vector <string> cache;
+	cache.reserve(linesCount);
+	if (!file)
+	{
+		cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+			getFileToCache();
+			reverseLinesOrder();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+			while (!file.eof()) {
+				string tmp;
+				getline(file, tmp);
+				cache.push_back(tmp);
+			}
+		file.close();
+
+		//system("CLS");
+		cout << DARK_BLUE
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|      LINIE ZOSTANĄ ODWRÓCONE ORAZ ZAPISANE W PLIKU TEKSTOWYM           |" << endl
+			<< "|      ORYGINALNY PLIK ZOSTANIE ZMODYFIKOWANY NA STALĘ...                |" << endl
+			<< "|      CZY NA PEWNO CHCESZ ZAPISAC ZMIANY DO PLIKU? (T/n)                |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+		char choice;
+		cin >> choice;
+		if ((choice == 'T') || (choice == 't') || (choice == 'Y') || (choice == 'y'))
+		{
+			file.open(path.c_str(), ios::out);
+			for (int i = linesCount - 1; i >= 0; i--) {
+				file << cache.at(i) << "\n";
+			}
+			file.close();
+		}
+
+
+		system("pause");
+	}
+}
+
+
+
+
+void reverseCharsOrder() {
+	int charsCount = getCharsCount();
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in);
+	vector <char> cache;
+	cache.reserve(charsCount);
+	if (!file)
+	{
+		cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+			getFileToCache();
+			reverseCharsOrder();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+		for (char c = file.get(); c != EOF; c = file.get())
+		{
+				cache.push_back(c);
+		}
+		file.close();
+
+		//system("CLS");
+		cout << DARK_BLUE
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|      ZNAKI ZOSTANĄ ODWRÓCONE ORAZ ZAPISANE W PLIKU TEKSTOWYM           |" << endl
+			<< "|      ORYGINALNY PLIK ZOSTANIE ZMODYFIKOWANY NA STALĘ...                |" << endl
+			<< "|      CZY NA PEWNO CHCESZ ZAPISAC ZMIANY DO PLIKU? (T/n)                |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+		char choice;
+		cin >> choice;
+		if ((choice == 'T') || (choice == 't') || (choice == 'Y') || (choice == 'y'))
+		{
+			file.open(path.c_str(), ios::out);
+			for (int i = charsCount-1; i >= 0; i--) {
+				file << cache.at(i);
+			}
+			file.close();
+		}
+
+
+		system("pause");
+	}
+}
+
+
+
+
+
+void deletePolishChars() {
+
+	int charsCount = getCharsCount();
+	string path = *filePath;
+	fstream file;
+	file.open(path.c_str(), ios::in | ios::out);
+	vector <char> cache;
+	cache.reserve(charsCount);
+	if (!file)
+	{
+		cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+			<< RESET << path << ERROR
+			<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+			<< RESET << endl
+			<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+
+		char repeat;
+		cin >> repeat;
+		if ((repeat == 'T') || (repeat == 't'))
+		{
+			getFilePath();
+			getFileToCache();
+		}
+		else
+		{
+			exit(0);
+		}
+	}
+	else
+	{
+		for (char c = file.get(); c != EOF; c = file.get())
+		{
+			switch (c) {
+			case 'ą':
+				cache.push_back('a');
+				break;
+			case 'ć':
+				cache.push_back('c');
+				break;
+			case 'ę':
+				cache.push_back('e');
+				break;
+			case 'ł':
+				cache.push_back('l');
+				break;
+			case 'ń':
+				cache.push_back('n');
+				break;
+			case 'ó':
+				cache.push_back('o');
+				break;
+			case 'ś':
+				cache.push_back('s');
+				break;
+			case 'ż':
+			case 'ź':
+				cache.push_back('z');
+				break;
+			case 'Ą':
+				cache.push_back('A');
+				break;
+			case 'Ć':
+				cache.push_back('C');
+				break;
+			case 'Ę':
+				cache.push_back('E');
+				break;
+			case 'Ł':
+				cache.push_back('L');
+				break;
+			case 'Ń':
+				cache.push_back('N');
+				break;
+			case 'Ó':
+				cache.push_back('O');
+				break;
+			case 'Ś':
+				cache.push_back('S');
+				break;
+			case 'Ż':
+			case 'Ź':
+				cache.push_back('Z');
+				break;
+			default:
+				cache.push_back(c);
+				break;
+			}
+		}
+		file.close();
+
+		//system("CLS");
+		cout << DARK_BLUE
+			<< ".________________________________________________________________________." << endl
+			<< "|                                                                        |" << endl
+			<< "|      POLSKIE ZNAKI ZOSTALY USUNIĘTE Z KOPII W PAMIĘCI PODRĘCZNEJ       |" << endl
+			<< "|      ORYGINALNY PLIK ZOSTANIE ZMODYFIKOWAN NA STALĘ...                 |" << endl
+			<< "|      CZY NA PEWNO CHCESZ ZAPISAC ZMIANY DO PLIKU? (T/n)                |" << endl
+			<< "|________________________________________________________________________|" << endl
+			<< RESET;
+		char choice;
+		cin >> choice;
+		if ((choice == 'T') || (choice == 't') || (choice == 'Y') || (choice == 'y'))
+		{
+			file.open(path.c_str(), ios::out);
+			//save cached chars to file
+			for (int i = 0; i < charsCount; i++) {
+				file << cache[i];
+			}
+			file.close();
+		}
+
+
+		system("pause");
+	}
+}
 
 void displayStatistics(textFileStats fileStats, int lineCount)
 {
@@ -349,6 +614,8 @@ void displayStatistics(textFileStats fileStats, int lineCount)
 		<< lineCount
 		<< tmp << "|" << endl
 		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
 		<< "|________________________________________________________________________|" << endl
 		<< RESET;
 
@@ -363,11 +630,27 @@ void getStats()
 		int linesCount = getLinesCount();
 		string path = *filePath;
 		fstream file;
-		file.open(path.c_str(), ios::in);
+		file.open(path.c_str(), ios::in );
 
 		if (!file)
 		{
-			cout << ERROR << "NIE MOŻNA OTWORZYĆ PLIKU: " << path << endl;
+			cout << ERROR << "WYSTĄPIL BLAD PODCZAS OTWIERANIA PLIKU!!" << endl
+				<< RESET << path << ERROR
+				<< " -NIE JEST POPRAWNĄ ŚCIEŻKĄ DO PLIKU" << endl
+				<< RESET << endl
+				<< "Czy chces podać ścieżkę pliku ponownie? (T/N)" << endl;
+
+			char repeat;
+			cin >> repeat;
+			if ((repeat == 'T') || (repeat == 't'))
+			{
+				getFilePath();
+				getStats();
+			}
+			else
+			{
+				exit(0);
+			}
 		}
 		else
 		{
@@ -466,6 +749,8 @@ void displaySubMenu() {
 		<< "|                                                                        |" << endl
 		<< "|     B - POWRÓT DO GLOWNEGO MENU                                        |" << endl
 		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
 		<< "|________________________________________________________________________|" << endl
 		<< RESET;
 	cin >> userSubChoice;
@@ -529,11 +814,17 @@ void displayMenu() {
 		<< "|     U - USUNIĘCIE POLSKICH ZNAKÓW                                      |" << endl
 		<< "|     Q - WYJŚCIE Z PROGRAMU                                             |" << endl
 		<< "|                                                                        |" << endl
+		<< "|                                                                        |" << endl
 		<< "|________________________________________________________________________|" << endl
 		<< RESET;
 	cin >> userChoice;
 	system("CLS");
 	menuSelector(userChoice);
+}
+
+void simplyfiedMenu() {
+	cout << "nope" << endl;
+
 }
 
 
@@ -544,35 +835,93 @@ int main(int argc, char *argv[]) // main( ilość argumentów, tablica pointeró
 	newFilePath = new string;
 	system("CLS"); // wyczyść konsole
 
-	if ((argc > 0) && (argc < 4))
+	switch (argc) {
+	case 1:
 	{
-		if ((argc = 1) || (argc = 2))
-		{
-			if (argc = 1)
-			{
-				cout << "Program w trybie single shot" << endl;
-				getFilePath();
-			}
-			else
-			{
-				cout << "Program w trybie burst shot" << endl;
-			}
-			getFileToCache();
-			while (true) {
-				displayMenu();
-			}
-		}
-		else {
-			if (argc = 3)
-			{
-				cout << "Program w trybie full auto" << endl;
-
-				//file and operation defined by user - full auto mode
-			}
+		getFilePath();
+		getFileToCache();
+		while (true) {
+			displayMenu();
 		}
 	}
-	else
+	break;
+	case 2:
+	{
+		if ((*argv[1] == 'H') || (*argv[1] == 'h') || (*argv[1] == '?') || (*argv[1] == 'help') || (*argv[1] == 'm') || (*argv[1] == 'man') || (*argv[1] == 'i') || (*argv[1] == 'info'))
+		{
+			cout << DARK_BLUE
+				<< ".________________________________________________________________________." << endl
+				<< "|                                                                        |" << endl
+				<< "|         INSTRUKCJA PROGRAMU \"STATYSTYKA PLIKU TEKSTOWEGO\"              |" << endl
+				<< "|                                                                        |" << endl
+				<< "|________________________________________________________________________|" << endl
+				<< RESET
+				<< LIGHT_BLUE
+				<< "|                                                                        |" << endl
+				<< "|   ABY WLACZYĆ PROGAM W TRYBIE AUTOMATYCZNYM LUB PÓL AUTOMATYCZNYM      |" << endl
+				<< "|   UŻYTKOWNIK MUSI PODAC DODATKOWE ARGUMENTY PRZY WLĄCZANIU PROGRAMU    |" << endl
+				<< "|   OBSLUGIWANE POLECENIA(ARGUMENTY):                                    |" << endl
+				<< "|                                                                        |" << endl
+				<< "|     STAT   - WYŚWIETL STATYSTYKI PLIKU                                 |" << endl
+				<< "|     LINE   - WYŚWIETL PLIK LINIA PO LINII                              |" << endl
+				<< "|     SRL    - ZAPIS PLIKU W ODWROTNEJ KOLEJNOŚCI LINII                  |" << endl
+				<< "|     SRCH   - ZAPIS PLIKU W ODWROTNEJ KOLEJNOŚCI ZNAKÓW                 |" << endl
+				<< "|     DEL    - USUNIĘCIE POLSKICH ZNAKÓW                                 |" << endl
+				<< "|                                                                        |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   PROGRAM WYMAGA WPROWADZENIA PELNEJ SCIEŻKI DO PLIKU.                 |" << endl
+				<< "|   PRZYKLADOWO:                                                         |" << endl
+				<< "|   C:\\MOJE DOKUMENTY\\PLIKI TEKSTOWE\\PLIK TEKSTOWY.TXT                   |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   SKLADNIA:                                                            |" << endl
+				<< "|   {NAZWA_EXE}* {ŚCIEŻKA_PLIKU}* {ARGUMENT}                             |" << endl
+				<< "|   * - WYMAGANE                                                         |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   PRZYKLADOWO:                                                         |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   TEXT-STATS.EXE  C:\\PLIK.TXT  STAT                                    |" << endl
+				<< "|   PODANIE POWYŻSZEJ KOMENDY W WIERSZU POLECEŃ WYŚWIETLI STATYSTYKI     |" << endl
+				<< "|   DLA PLIKU \"PLIK.TXT\" ZNAJDUJĄCEGO SIĘ NA DYSKU C                     |" << endl
+				<< "|                                                                        |" << endl
+				<< "|   TEXT-STATS.EXE C:\\PLIK.TXT                                           |" << endl
+				<< "|   PODANIE POWYŻSZEJ KOMENDY W WIERSZU POLECEŃ WYŚWIETLI PELEN MENU     |" << endl
+				<< "|   PROGRAMU Z ZALADOWANYM PLIKIEM TEKSOWYM \"PLIK.TXT\"                   |" << endl
+				<< "|   ZNAJDUJĄCYM SIĘ NA DYSKU C                                           |" << endl
+				<< "|                                                                        |" << endl
+				<< "|                                                                        |" << endl
+				<< "|________________________________________________________________________|" << endl
+				<< RESET;
+			exit(0);
+		}
+		else
+		{
+			*filePath = argv[1];
+		}
+
+		getFileToCache();
+		while (true) {
+			displayMenu();
+		}
+	}
+	break;
+	case 3:
+	{
+		*filePath = argv[1];
+		char choice = *argv[2];
+		cout << "Program w trybie full auto" << endl;
+		system("pause");
+	}
+	break;
+	default:
 	{
 		cout << "Nieprawidlowa ilość argumentów!" << endl;
+		exit(0);
 	}
+	break;
+	}
+
 }
+
+
+
+
